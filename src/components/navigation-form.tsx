@@ -16,10 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { NavigationItem } from "@/types/navigation-item";
 
-type NavigationFormData = z.infer<typeof navigationFormSchema>;
+export type NavigationFormData = z.infer<typeof navigationFormSchema>;
 
 type NavigationFormProps = {
-  navigationItem?: NavigationItem;
+  navigationItem?: NavigationItem | null;
   onSubmit: (data: NavigationFormData) => void;
 };
 
@@ -36,12 +36,15 @@ export default function NavigationForm({
   });
 
   const handleSubmit = (data: NavigationFormData) => {
+    form.reset();
     onSubmit(data);
   };
 
+  const isEdit = !!navigationItem;
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -68,8 +71,12 @@ export default function NavigationForm({
             </FormItem>
           )}
         />
-        <Button variant="outline">Anuluj</Button>
-        <Button type="submit">Dodaj</Button>
+        <div className="flex items-center gap-x-2">
+          <Button variant="outline">Anuluj</Button>
+          <Button variant="primaryOutline" type="submit">
+            {isEdit ? "Zapisz" : "Dodaj"}
+          </Button>
+        </div>
       </form>
     </Form>
   );
