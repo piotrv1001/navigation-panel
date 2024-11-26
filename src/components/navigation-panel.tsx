@@ -1,76 +1,137 @@
 "use client";
 
 import { NavigationItem } from "@/types/navigation-item";
-import CardWrapper from "./card-wrapper";
-import NavigationForm, { NavigationFormData } from "./navigation-form";
+import { NavigationResult } from "./navigation-form";
 import NoDataPlaceholder from "./no-data-placeholder";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import NavigationItemCard from "./navigation-item-card";
+import NavigationList from "./navigation-list";
+import { NavigationProvider } from "@/contexts/navigation-context";
+import CardWrapper from "./card-wrapper";
+
+const findElement = (
+  items: NavigationItem[],
+  id: string
+): NavigationItem | null => {
+  for (const item of items) {
+    if (item.id === id) {
+      return item;
+    }
+    if (item.children) {
+      const found = findElement(item.children, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+const findParent = (
+  items: NavigationItem[],
+  id: string
+): NavigationItem | null => {
+  for (const item of items) {
+    if (item.children) {
+      const found = item.children.find((child) => child.id === id);
+      if (found) {
+        return item;
+      }
+      const parent = findParent(item.children, id);
+      if (parent) {
+        return parent;
+      }
+    }
+  }
+  return null;
+};
 
 export default function NavigationPanel() {
   const [navigationItems, setNavigationItems] = useState<NavigationItem[]>([]);
-  const [selectedNavigationItem, setSelectedNavigationItem] =
-    useState<NavigationItem | null>(null);
 
-  const handleFormSubmit = (data: NavigationFormData) => {
-    if (selectedNavigationItem) {
-      setNavigationItems((prev) =>
-        prev.map((item) =>
-          item.id === selectedNavigationItem.id
-            ? {
-                id: item.id,
-                ...data,
-              }
-            : item
-        )
-      );
-    } else {
-      const id = uuidv4();
-      const newItem = { ...data, id };
-      setNavigationItems((prev) => [...prev, newItem]);
+  const handleFormSubmit = (data: NavigationResult) => {
+    if (!data.id) return;
+    const element = findElement(navigationItems, data.id);
+    if (element) {
+      element.type = "item";
+      element.name = data.name;
+      element.link = data.link;
+      setNavigationItems((prev) => [...prev]);
     }
-    setSelectedNavigationItem(null);
   };
 
   const handleEditNavigationItem = (id: string) => {
-    const item = navigationItems.find((item) => item.id === id);
-    if (item) {
-      setSelectedNavigationItem(item);
+    const element = findElement(navigationItems, id);
+    if (element) {
+      element.type = "form";
+      setNavigationItems((prev) => [...prev]);
     }
   };
 
   const handleDeleteNavigationItem = (id: string) => {
-    setNavigationItems((prev) => prev.filter((item) => item.id !== id));
+    const parent = findParent(navigationItems, id);
+    if (parent) {
+      parent.children = parent.children?.filter((child) => child.id !== id);
+      setNavigationItems((prev) => [...prev]);
+    } else {
+      setNavigationItems(navigationItems.filter((item) => item.id !== id));
+    }
   };
 
-  const handleAddNavigationItem = () => {
-    // TODO
+  const handleAddNavigationItem = (parentId: string) => {
+    const parent = findElement(navigationItems, parentId);
+    if (parent) {
+      parent.children = parent.children ?? [];
+      parent.children.push({ id: uuidv4(), type: "form", name: "", link: "" });
+      setNavigationItems((prev) => [...prev]);
+      return;
+    }
+    setNavigationItems((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "form", name: "", link: "" },
+    ]);
   };
+
+  const handleCancelForm = (id: string) => {
+    const element = findElement(navigationItems, id);
+    if (element) {
+      if (element.type === "form" && !element.name) {
+        handleDeleteNavigationItem(id);
+      } else {
+        element.type = "item";
+        setNavigationItems((prev) => [...prev]);
+      }
+    }
+  };
+
+  const handleAddFirstMenuItem = () => {
+    setNavigationItems([{ id: uuidv4(), type: "form", name: "", link: "" }]);
+  };
+
+  const handlers = {
+    onEditClick: handleEditNavigationItem,
+    onDeleteClick: handleDeleteNavigationItem,
+    onAddMenuItemClick: handleAddNavigationItem,
+  };
+
+  const showNoDataPlaceholder =
+    navigationItems.length === 0 ||
+    navigationItems.every((item) => item.type === "form" && !item.name);
 
   return (
-    <div className="p-3 space-y-4">
-      <NoDataPlaceholder onAddMenuItemClick={() => console.log("click")} />
-      <CardWrapper>
-        {selectedNavigationItem ? (
-          <NavigationForm
-            key="edit"
-            onSubmit={handleFormSubmit}
-            navigationItem={selectedNavigationItem}
-          />
-        ) : (
-          <NavigationForm key="add" onSubmit={handleFormSubmit} />
+    <NavigationProvider handlers={handlers}>
+      <div className="p-3 space-y-4">
+        {showNoDataPlaceholder && (
+          <NoDataPlaceholder onAddMenuItemClick={handleAddFirstMenuItem} />
         )}
-      </CardWrapper>
-      {navigationItems.map((item) => (
-        <NavigationItemCard
-          key={item.id}
-          navigationItem={item}
-          onAddMenuItemClick={handleAddNavigationItem}
-          onEditClick={() => handleEditNavigationItem(item.id)}
-          onDeleteClick={() => handleDeleteNavigationItem(item.id)}
-        />
-      ))}
-    </div>
+        <CardWrapper className="overflow-hidden">
+          <NavigationList
+            items={navigationItems}
+            onSubmit={handleFormSubmit}
+            onCancel={handleCancelForm}
+          />
+        </CardWrapper>
+      </div>
+    </NavigationProvider>
   );
 }

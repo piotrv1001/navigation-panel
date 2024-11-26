@@ -17,15 +17,20 @@ import { Input } from "@/components/ui/input";
 import { NavigationItem } from "@/types/navigation-item";
 
 export type NavigationFormData = z.infer<typeof navigationFormSchema>;
+export type NavigationResult = NavigationFormData & {
+  id?: string;
+};
 
 type NavigationFormProps = {
   navigationItem?: NavigationItem | null;
-  onSubmit: (data: NavigationFormData) => void;
+  onSubmit: (data: NavigationResult) => void;
+  onCancel: (id: string) => void;
 };
 
 export default function NavigationForm({
   navigationItem,
   onSubmit,
+  onCancel,
 }: NavigationFormProps) {
   const form = useForm<NavigationFormData>({
     resolver: zodResolver(navigationFormSchema),
@@ -37,7 +42,7 @@ export default function NavigationForm({
 
   const handleSubmit = (data: NavigationFormData) => {
     form.reset();
-    onSubmit(data);
+    onSubmit({ ...data, id: navigationItem?.id });
   };
 
   const isEdit = !!navigationItem;
@@ -72,7 +77,13 @@ export default function NavigationForm({
           )}
         />
         <div className="flex items-center gap-x-2">
-          <Button variant="outline">Anuluj</Button>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => navigationItem?.id && onCancel(navigationItem.id)}
+          >
+            Anuluj
+          </Button>
           <Button variant="primaryOutline" type="submit">
             {isEdit ? "Zapisz" : "Dodaj"}
           </Button>
