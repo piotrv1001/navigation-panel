@@ -3,7 +3,6 @@
 import { NavigationItem } from "@/types/navigation-item";
 import { NavigationResult } from "./navigation-form";
 import NoDataPlaceholder from "./no-data-placeholder";
-import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import NavigationList from "./navigation-list";
 import { NavigationProvider } from "@/contexts/navigation-context";
@@ -12,6 +11,7 @@ import { Button } from "./ui/button";
 import DndWrapper from "./dnd-wrapper";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
+import { useNavigationItemsStore } from "@/stores/navigation-items-store";
 
 const findElement = (
   items: NavigationItem[],
@@ -51,7 +51,8 @@ const findParent = (
 };
 
 export default function NavigationPanel() {
-  const [navigationItems, setNavigationItems] = useState<NavigationItem[]>([]);
+  const { items: navigationItems, setItems: setNavigationItems } =
+    useNavigationItemsStore();
 
   const handleFormSubmit = (data: NavigationResult) => {
     if (!data.id) return;
@@ -60,7 +61,7 @@ export default function NavigationPanel() {
       element.type = "item";
       element.name = data.name;
       element.link = data.link;
-      setNavigationItems((prev) => [...prev]);
+      setNavigationItems([...navigationItems]);
     }
   };
 
@@ -68,7 +69,7 @@ export default function NavigationPanel() {
     const element = findElement(navigationItems, id);
     if (element) {
       element.type = "form";
-      setNavigationItems((prev) => [...prev]);
+      setNavigationItems([...navigationItems]);
     }
   };
 
@@ -76,7 +77,7 @@ export default function NavigationPanel() {
     const parent = findParent(navigationItems, id);
     if (parent) {
       parent.children = parent.children?.filter((child) => child.id !== id);
-      setNavigationItems((prev) => [...prev]);
+      setNavigationItems([...navigationItems]);
     } else {
       setNavigationItems(navigationItems.filter((item) => item.id !== id));
     }
@@ -87,11 +88,11 @@ export default function NavigationPanel() {
     if (parent) {
       parent.children = parent.children ?? [];
       parent.children.push({ id: uuidv4(), type: "form", name: "", link: "" });
-      setNavigationItems((prev) => [...prev]);
+      setNavigationItems([...navigationItems]);
       return;
     }
-    setNavigationItems((prev) => [
-      ...prev,
+    setNavigationItems([
+      ...navigationItems,
       { id: uuidv4(), type: "form", name: "", link: "" },
     ]);
   };
@@ -101,8 +102,8 @@ export default function NavigationPanel() {
       (item) => item.type === "form" && !item.name
     );
     if (containsForm) return;
-    setNavigationItems((prev) => [
-      ...prev,
+    setNavigationItems([
+      ...navigationItems,
       { id: uuidv4(), type: "form", name: "", link: "" },
     ]);
   };
@@ -114,7 +115,7 @@ export default function NavigationPanel() {
         handleDeleteNavigationItem(id);
       } else {
         element.type = "item";
-        setNavigationItems((prev) => [...prev]);
+        setNavigationItems([...navigationItems]);
       }
     }
   };
@@ -125,15 +126,18 @@ export default function NavigationPanel() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
     if (active.id === over?.id) return;
-    setNavigationItems((prev) => {
+
+    const getNewItems = (prev: NavigationItem[]): NavigationItem[] => {
       const oldIndex = prev.findIndex((item) => item.id === active.id);
       const newIndex = prev.findIndex((item) => item.id === over?.id);
 
-      if(oldIndex === -1 || newIndex === -1) return prev;
+      if (oldIndex === -1 || newIndex === -1) return prev;
 
       return arrayMove(prev, oldIndex, newIndex);
-    });
+    };
+    setNavigationItems(getNewItems(navigationItems));
   };
 
   const handlers = {
@@ -160,10 +164,7 @@ export default function NavigationPanel() {
         )}
         {navigationItems.length > 0 && (
           <CardWrapper className="overflow-hidden">
-            <DndWrapper
-              items={navigationItems}
-              onDragEnd={handleDragEnd}
-            >
+            <DndWrapper items={navigationItems} onDragEnd={handleDragEnd}>
               <NavigationList
                 items={navigationItems}
                 onSubmit={handleFormSubmit}
