@@ -2,6 +2,7 @@ import { NavigationItem } from "@/types/navigation-item";
 import React from "react";
 import NavigationItemCard from "./navigation-item-card";
 import NavigationForm, { NavigationFormData } from "./navigation-form";
+import SortableItem from "./sortable-item";
 
 type NavigationListProps = {
   items: NavigationItem[];
@@ -17,13 +18,13 @@ export default function NavigationList({
   level = 0,
 }: NavigationListProps) {
   return (
-    <div className="bg-[#f9fafb]">
+    <div>
       {items.map((item) => (
         <React.Fragment key={item.id}>
           {item.type === "item" ? (
-            <>
+            <SortableItem itemId={item.id}>
               <NavigationItemCard navigationItem={item} level={level} />
-            </>
+            </SortableItem>
           ) : (
             <div
               className="p-3 border-b"

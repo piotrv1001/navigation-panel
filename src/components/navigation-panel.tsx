@@ -9,6 +9,9 @@ import NavigationList from "./navigation-list";
 import { NavigationProvider } from "@/contexts/navigation-context";
 import CardWrapper from "./card-wrapper";
 import { Button } from "./ui/button";
+import DndWrapper from "./dnd-wrapper";
+import { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 
 const findElement = (
   items: NavigationItem[],
@@ -120,6 +123,19 @@ export default function NavigationPanel() {
     setNavigationItems([{ id: uuidv4(), type: "form", name: "", link: "" }]);
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id === over?.id) return;
+    setNavigationItems((prev) => {
+      const oldIndex = prev.findIndex((item) => item.id === active.id);
+      const newIndex = prev.findIndex((item) => item.id === over?.id);
+
+      if(oldIndex === -1 || newIndex === -1) return prev;
+
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
   const handlers = {
     onEditClick: handleEditNavigationItem,
     onDeleteClick: handleDeleteNavigationItem,
@@ -144,11 +160,16 @@ export default function NavigationPanel() {
         )}
         {navigationItems.length > 0 && (
           <CardWrapper className="overflow-hidden">
-            <NavigationList
+            <DndWrapper
               items={navigationItems}
-              onSubmit={handleFormSubmit}
-              onCancel={handleCancelForm}
-            />
+              onDragEnd={handleDragEnd}
+            >
+              <NavigationList
+                items={navigationItems}
+                onSubmit={handleFormSubmit}
+                onCancel={handleCancelForm}
+              />
+            </DndWrapper>
             {showAddRootLevelNavigationItemButton && (
               <div className="py-5 px-6 bg-[#f5f5f5]">
                 <Button
