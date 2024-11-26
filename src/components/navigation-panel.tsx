@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import NavigationList from "./navigation-list";
 import { NavigationProvider } from "@/contexts/navigation-context";
 import CardWrapper from "./card-wrapper";
+import { Button } from "./ui/button";
 
 const findElement = (
   items: NavigationItem[],
@@ -92,6 +93,17 @@ export default function NavigationPanel() {
     ]);
   };
 
+  const handleAddRootLevelNavigationItem = () => {
+    const containsForm = navigationItems.some(
+      (item) => item.type === "form" && !item.name
+    );
+    if (containsForm) return;
+    setNavigationItems((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "form", name: "", link: "" },
+    ]);
+  };
+
   const handleCancelForm = (id: string) => {
     const element = findElement(navigationItems, id);
     if (element) {
@@ -114,9 +126,15 @@ export default function NavigationPanel() {
     onAddMenuItemClick: handleAddNavigationItem,
   };
 
+  const containsOnlyEmptyForms = navigationItems.every(
+    (item) => item.type === "form" && !item.name
+  );
+
   const showNoDataPlaceholder =
-    navigationItems.length === 0 ||
-    navigationItems.every((item) => item.type === "form" && !item.name);
+    navigationItems.length === 0 || containsOnlyEmptyForms;
+
+  const showAddRootLevelNavigationItemButton =
+    navigationItems.length > 0 && !containsOnlyEmptyForms;
 
   return (
     <NavigationProvider handlers={handlers}>
@@ -124,13 +142,25 @@ export default function NavigationPanel() {
         {showNoDataPlaceholder && (
           <NoDataPlaceholder onAddMenuItemClick={handleAddFirstMenuItem} />
         )}
-        <CardWrapper className="overflow-hidden">
-          <NavigationList
-            items={navigationItems}
-            onSubmit={handleFormSubmit}
-            onCancel={handleCancelForm}
-          />
-        </CardWrapper>
+        {navigationItems.length > 0 && (
+          <CardWrapper className="overflow-hidden">
+            <NavigationList
+              items={navigationItems}
+              onSubmit={handleFormSubmit}
+              onCancel={handleCancelForm}
+            />
+            {showAddRootLevelNavigationItemButton && (
+              <div className="py-5 px-6 bg-[#f5f5f5]">
+                <Button
+                  variant="outline"
+                  onClick={handleAddRootLevelNavigationItem}
+                >
+                  Dodaj pozycję menu
+                </Button>
+              </div>
+            )}
+          </CardWrapper>
+        )}
       </div>
     </NavigationProvider>
   );

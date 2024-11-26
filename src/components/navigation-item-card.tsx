@@ -18,8 +18,9 @@ export default function NavigationItemCard({
     useNavigationContext();
   return (
     <div
+      className="p-3 border-b"
       style={{
-        marginLeft: `${level * 16}px`,
+        paddingLeft: `${level * 24 + 12}px`,
       }}
     >
       <div className="flex items-center justify-between">

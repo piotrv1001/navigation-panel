@@ -17,7 +17,7 @@ export default function NavigationList({
   level = 0,
 }: NavigationListProps) {
   return (
-    <div>
+    <div className="bg-[#f9fafb]">
       {items.map((item) => (
         <React.Fragment key={item.id}>
           {item.type === "item" ? (
@@ -26,8 +26,9 @@ export default function NavigationList({
             </>
           ) : (
             <div
+              className="p-3 border-b"
               style={{
-                marginLeft: `${level * 16}px`,
+                paddingLeft: `${level * 24 + 12}px`,
               }}
             >
               <NavigationForm

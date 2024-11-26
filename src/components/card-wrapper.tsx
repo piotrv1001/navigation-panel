@@ -7,7 +7,7 @@ type CardWrapperProps = {
 
 export default function CardWrapper({ className, children }: CardWrapperProps) {
   return (
-    <div className={cn("p-3 rounded-md border bg-white", className)}>
+    <div className={cn("rounded-md border bg-white", className)}>
       {children}
     </div>
   );
